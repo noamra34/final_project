@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_pymongo import PyMongo
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,11 +7,15 @@ import datetime
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/supermarket"
-app.config["JWT_SECRET_KEY"] = "noamguy0309"
+app.config["JWT_SECRET_KEY"] = "212551121"
 mongo = PyMongo(app)
 jwt = JWTManager(app)
 
-@app.route('/signup', methods=['POST'])
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/signup', methods=['POST','GET'])
 def signup():
     data = request.json
     username = data.get('username')
@@ -30,6 +34,7 @@ def login():
         access_token = create_access_token(identity=str(user['_id']))
         return jsonify(access_token=access_token)
     return jsonify({'msg':'Bad username or password'}), 401
+    
 
 @app.route('/products', methods=['POST'])
 @jwt_required()
@@ -46,12 +51,22 @@ def add_product():
     return jsonify({'msg':'Product added successfully'}), 201
 
 
+# @app.route('/products', methods=['GET'])
+# def get_products():
+#     products = list(mongo.db.products.find())
+#     for product in products:
+#         product['_id'] = str(product['_id'])
+#     return jsonify(products), 200
 @app.route('/products', methods=['GET'])
 def get_products():
-    products = list(mongo.db.products.find())
-    for product in products:
-        product['_id'] = str(product['_id'])
-    return jsonify(products), 200
+    try:
+        products = list(mongo.db.supermarket.products.find())
+        for product in products:
+            product['_id'] = str(product['_id'])
+        return jsonify(products), 200
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
 
 @app.route('/products/<product_id>', methods=['PUT'])
 @jwt_required
@@ -61,16 +76,16 @@ def update_product(product_id):
         {'_id': ObjectId(product_id)},
         {'$set': data}
     )
-    return jsonify({'msg': 'Product update successfully'}), 200
+    return jsonify({'msg': 'Product updated successfully'}), 200
 
 @app.route('/products/<product_id>', methods=['DELETE'])
-@jwt_required
+@jwt_required()
 def delete_product(product_id):
     mongo.db.products.delete_one({'_id': ObjectId(product_id)})
-    return jsonify({'msg': 'Product delete successfully'})
+    return jsonify({'msg': 'Product deleted successfully'})
 
 @app.route('/cart', methods=['POST'])
-@jwt_required
+@jwt_required()
 def add_to_cart():
     data = request.json
     current_user = get_jwt_identity()
@@ -81,7 +96,7 @@ def add_to_cart():
         'added_at': datetime.datetime.utcnow()
     }
     mongo.db.cart.insert_one(cart_item)
-    return jsonify({'msg': 'Item added to cart succefully '}), 201
+    return jsonify({'msg': 'Item added to cart successfully'}), 201
 
 @app.route('/cart', methods=['GET'])
 @jwt_required()
@@ -101,14 +116,14 @@ def update_cart_item(cart_item_id):
         {'_id': ObjectId(cart_item_id), 'user_id': current_user},
         {'$set': data}
     )
-    return jsonify({'msg': 'Cart item update successfully'}), 200
+    return jsonify({'msg': 'Cart item updated successfully'}), 200
 
 @app.route('/cart/<cart_item_id>', methods=['DELETE'])
 @jwt_required()
 def delete_cart_item(cart_item_id):
     current_user = get_jwt_identity()
     mongo.db.cart.delete_one({'_id': ObjectId(cart_item_id), 'user_id': current_user})
-    return jsonify({'msg': 'Cart item delete successfully'}), 200
+    return jsonify({'msg': 'Cart item deleted successfully'}), 200
 
 @app.route('/orders', methods=['POST'])
 @jwt_required()
@@ -134,10 +149,5 @@ def get_orders():
         order['_id'] = str(order['_id'])
     return jsonify(orders), 200
 
-if __name__ == '__maim__':
+if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-

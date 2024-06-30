@@ -1,0 +1,9 @@
+architecture: standalone
+auth:
+  rootPassword: "212551121"
+  usernames:
+    - super
+  passwords:
+    - noam123456789
+  databases:
+    - supermarket
