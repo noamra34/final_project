@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selected Products</title>
+    <style>
+        .product-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .product {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            text-align: center;
+            width: 200px;
+        }
+        .product-name {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .product-price {
+            font-size: 1em;
+            color: #555;
+        }
+        .total-price {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Selected Products</h1>
+    <div class="product-container">
+        {% for product in selected_products %}
+        <div class="product">
+            <div class="product-name">{{ product.product_name }}</div>
+            <div class="product-price">${{ product.price }}</div>
+            <div class="product-category">Category: {{ product.category }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="total-price">
+        Total Price: ${{ total_price }}
+    </div>
+</body>
+</html>
