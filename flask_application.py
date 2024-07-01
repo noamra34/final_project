@@ -23,7 +23,7 @@ def invalid():
     return render_template('invalide.html')
 
 @app.route('/signup', methods=['GET','POST'])
-def products():
+def signup():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -53,8 +53,17 @@ def login():
         return redirect('/signup')
     return render_template('/login.html')
 
+@app.route('/products', methods=['GET'])
+def products():
+    products_cursor = db.products.find({}, {"product_name": 1,'price': 1,"category": 1, "_id": 0})  # Fetch only product_name field
+    products_list = [product for product in products_cursor]
+    print("Fetched products:", products_list)
+    return render_template('/products.html', products=products_list)
+    
 
 
+
+    
 if __name__ == '__main__':
     app.run(debug=True)
 
