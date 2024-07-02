@@ -8,7 +8,7 @@ import bcrypt
 import datetime
 
 app = Flask(__name__)
-MONGO_URI = "mongodb://super:noam123456789@localhost:27017/supermarket"
+MONGO_URI = "mongodb://super:noam123456789@mongodb:27017/supermarket"
 client = MongoClient(MONGO_URI)
 db = client.supermarket
 jwt = JWTManager(app)
