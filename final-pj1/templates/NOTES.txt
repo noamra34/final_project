@@ -1,0 +1,2 @@
+kubectl get pods
+kubectl port-forward <flask-app-XXXXXXXXXX-XXXXX> 5000:5000
