@@ -1,14 +1,14 @@
 pipeline{
     agent {
         kubernetes {
-            yamelFile = 'build_pods.yaml'
-            deafultContainer 'ez-docker-helm-build'
+            yamlFile = 'build_pods.yaml'
+            defaultContainer 'ez-docker-helm-build'
         }
     }
 
     environment{
         GITHUB_API_URL = 'https://api.github.com'
-        GIT_CREDENTIALS_ID = credential('git_final_project')
+        GIT_CREDENTIALS_ID = credentials('git_final_project')
         GITHUB_REPO = 'noamra34/Project'
         DOCKER_IMAGE = 'noam476/final_project'
 
@@ -23,7 +23,7 @@ pipeline{
         stage("Build docker image"){
             steps{
                 script{
-                    dockerImage = docker.build("${DOCKER_IMAGE}:v1, --no-cache .")
+                    dockerImage = docker.build("${DOCKER_IMAGE}:v1", "--no-cache .")
 
                 }
             }
@@ -35,7 +35,7 @@ pipeline{
             steps{
                 script{
                     docker.withRegistry('https://registry.hub.docker.com', 'docker_final_project'){
-                        dockerImage.Push("latest")
+                        dockerImage.push("latest")
                     }
                 }
             }
@@ -47,7 +47,7 @@ pipeline{
                 }
             }
             steps{
-                withCredentials([string(credentialsId: 'git_final_project', veriable: 'GIT_CREDENTIALS_ID' )]){
+                withCredentials([string(credentialsId: 'git_final_project', variable: 'GIT_CREDENTIALS_ID' )]){
                     script {
                         def branchName = env.BRANCH_NAME
                         def pullRequestTitle = "Merge ${branchName} into main"
