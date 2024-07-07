@@ -7,16 +7,38 @@ pipeline{
     }
 
     environment{
-        GITHUB_API_URL = 'https://api.github.com'
+        DOCKERHUB_CRED = credentials('docker_final_project')
         GIT_CREDENTIALS_ID = credentials('git_final_project')
         GITHUB_REPO = 'noamra34/Project'
+        DOCKERHUB_REPO = 'noam476'
         DOCKER_IMAGE = 'noam476/final_project'
+        IMAGE_TAG = "latest"
 
     }
     stages{
         stage("Checkout code"){
             steps{
                 checkout scm
+            }
+        }
+
+        stage('Create Merge request'){
+            steps{
+                script{
+                    def branchName = env.BRANCH_NAME
+                    def mainBranch = "main"
+                    def pullRequestTitle = "Merge ${branchName} into ${mainBranch}"
+                    def pullRequestBody = "Automatically generated pull request to merge ${branchName} into ${mainBranch}"
+
+                    sh """
+                        curl -u $GIT_CREDENTIALS_ID_USR:$GIT_CREDENTIALS_ID_PSW -X POST -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/${GITHUB_REPO}/pulls -d '{
+                            "title": "${pullRequestTitle}",
+                            "body": "${pullRequestBody}",
+                            "head": "${branchName}",
+                            "base": "${mainBranch}"
+                        }'
+                    """
+                }
             }
         }
 
@@ -28,39 +50,42 @@ pipeline{
                 }
             }
         }
+        stage("Wait for merge request"){
+            steps{
+                script {
+                    waitUntil{
+                        script {
+                            def response = sh(
+                                script: """curl -u $GIT_CREDENTIALS_ID_USR:$GIT_CREDENTIALS_ID_PSW -s -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/noamra34/project/pulls?state=closed | jq '.[] | select(.title=="${pullRequestTitle}")'""",
+                                returnStdout: true
+                            ).trim()
+                            return response != ""
+                        }
+                    }
+                }
+
+            }
+        }
+        stage('Build Docker Image'){
+            steps{
+                script{
+                    sh "docker build -t ${env.DOCKERHUB_REPO}:${env.IMAGE_TAG} ."
+                }
+            }
+        }
         stage("Push docker image"){
             when {
                 branch 'main'
             }
             steps{
                 script{
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker_final_project'){
-                        dockerImage.push("latest")
-                    }
-                }
-            }
-        }
-        stage("Create merge request"){
-            when{
-                not {
-                    branch 'main'
-                }
-            }
-            steps{
-                withCredentials([string(credentialsId: 'git_final_project', variable: 'GIT_CREDENTIALS_ID' )]){
-                    script {
-                        def branchName = env.BRANCH_NAME
-                        def pullRequestTitle = "Merge ${branchName} into main"
-                        def pullRequestBody = "Automatically generated merge request for branch ${branchName}"
-
-                        sh """
-                            curl -X POST -H "Authorization: token ${GIT_CREDENTIALS_ID}" \
-                            -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}, "base": "main" }' \
-                            ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
-                        """
-                    }
+                    sh """
+                        echo $DOCKERHUB_CRED_PSW | docker login -u $DOCKERHUB_CRED_USR --password-stdin
+                        docker push ${env.DOCKERHUB_REPO}:${env.IMAGE_TAG}
+                    """
                 }
             }
         }
     }
 }
+        
